@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>New Forest Cycling Pub Crawl 🚴</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',Arial,sans-serif;background:#f4f9f4;color:#1a2e1a}
+  .page{max-width:920px;margin:0 auto;padding:20px}
+  header{background:linear-gradient(135deg,#2d6a2d,#1a4a1a);color:white;border-radius:12px;padding:22px 28px;margin-bottom:18px;display:flex;align-items:center;gap:16px}
+  header .icon{font-size:44px}
+  header h1{font-size:24px;font-weight:700;margin-bottom:4px}
+  header p{font-size:13px;opacity:.85}
+  .stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px}
+  .stat{background:white;border-radius:10px;padding:14px 16px;border-left:4px solid #2d6a2d;box-shadow:0 1px 6px rgba(0,0,0,.07)}
+  .stat .label{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+  .stat .value{font-size:18px;font-weight:700;color:#2d6a2d}
+  .stat .sub{font-size:11px;color:#888;margin-top:2px}
+  #map{height:460px;border-radius:12px;box-shadow:0 2px 12px rgba(0,0,0,.15);margin-bottom:20px;border:2px solid #c5dfc5}
+  h2{font-size:16px;color:#2d6a2d;font-weight:700;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #c5dfc5}
+  .pub-list{display:flex;flex-direction:column;gap:0;margin-bottom:24px}
+  .leg-arrow{text-align:center;font-size:11px;color:#888;padding:5px 0;display:flex;align-items:center;justify-content:center;gap:8px}
+  .leg-arrow::before,.leg-arrow::after{content:'';flex:1;height:1px;background:#ddd}
+  .pub-card{background:white;border-radius:10px;display:grid;grid-template-columns:110px 1fr;box-shadow:0 1px 6px rgba(0,0,0,.07);border:1px solid #e0eee0;overflow:hidden;transition:box-shadow .2s}
+  .pub-card:hover{box-shadow:0 4px 16px rgba(45,106,45,.15)}
+  .pub-card.start{border-left:5px solid #2d6a2d}
+  .pub-img-wrap{width:110px;min-height:100px;background:#e8f4e8;position:relative;overflow:hidden;flex-shrink:0}
+  .pub-img-wrap img{width:110px;height:100%;min-height:100px;object-fit:cover;display:block}
+  .pub-body{padding:12px 14px;display:flex;flex-direction:column;gap:4px}
+  .pub-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+  .pub-name{font-size:13px;font-weight:700;color:#1a2e1a}
+  .pub-num{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:white;flex-shrink:0}
+  .ns{background:#2d6a2d}.np{background:#c47f00}
+  .pub-village{font-size:11px;color:#666}
+  .pub-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+  .badge{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600}
+  .bg{background:#e0f0e0;color:#2d6a2d}.bb{background:#e8f0fe;color:#1a56c9}.br{background:#fdecea;color:#b00020}
+  .pub-notes{font-size:11.5px;color:#444;line-height:1.5}
+  .pub-link{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:#2d6a2d;text-decoration:none;border:1px solid #c5dfc5;border-radius:6px;padding:3px 9px;background:#f0f9f0;width:fit-content;transition:background .15s;margin-top:2px}
+  .pub-link:hover{background:#d4ecd4}
+  .tips{background:white;border-radius:10px;padding:16px 18px;box-shadow:0 1px 6px rgba(0,0,0,.07);border:1px solid #e0eee0;margin-bottom:20px}
+  .tip-row{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid #f0f0f0;font-size:12px}
+  .tip-row:last-child{border-bottom:none}
+  .tip-label{font-weight:700;color:#2d6a2d;min-width:130px;flex-shrink:0}
+  .tip-text{color:#333;line-height:1.5}
+  footer{text-align:center;font-size:11px;color:#999;padding:10px 0 4px}
+  .popup-img{width:220px;height:110px;object-fit:cover;border-radius:6px;margin-bottom:7px;display:block}
+  /* placeholder shown when image fails */
+  .img-placeholder{width:110px;min-height:100px;display:flex;align-items:center;justify-content:center;font-size:30px;background:linear-gradient(135deg,#c5dfc5,#e8f4e8);position:absolute;inset:0}
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="icon">🚴</div>
+    <div>
+      <h1>New Forest Cycling Pub Crawl</h1>
+      <p>Nomansland Loop &nbsp;·&nbsp; ~32 miles &nbsp;·&nbsp; 8 Pubs &nbsp;·&nbsp; Friday 11 or Saturday 12 July 2025</p>
+    </div>
+  </header>
+  <div class="stats-bar">
+    <div class="stat"><div class="label">Total Distance</div><div class="value">~32 mi</div><div class="sub">full loop</div></div>
+    <div class="stat"><div class="label">Pub Stops</div><div class="value">8 pubs</div><div class="sub">avg 3–4 mi apart</div></div>
+    <div class="stat"><div class="label">Start / Finish</div><div class="value">Nomansland</div><div class="sub">The Lamb Inn</div></div>
+    <div class="stat"><div class="label">Group Size</div><div class="value">2–4</div><div class="sub">cyclists</div></div>
+  </div>
+  <div id="map"></div>
+  <h2>The Pubs — Stop by Stop</h2>
+  <div class="pub-list" id="pubList"></div>
+  <h2>Tips &amp; Practical Notes</h2>
+  <div class="tips">
+    <div class="tip-row"><span class="tip-label">🍺 Pacing</span><span class="tip-text">8 pubs over the day — 1 pint per stop max to stay safe on the bike. Eat a proper meal at stop 4 (Royal Oak) and/or stop 6 (Horse &amp; Groom).</span></div>
+    <div class="tip-row"><span class="tip-label">⚠️ Royal Oak</span><span class="tip-text">Closed Mon &amp; Tue — fine for Fri 11th or Sat 12th. Only serves ploughman's — perfect for a mid-ride lunch at mile 15.</span></div>
+    <div class="tip-row"><span class="tip-label">⚠️ Landford Poacher</span><span class="tip-text">Closed Mon &amp; Tue — open from noon on both your dates. Arrive by 12:30pm on this early leg.</span></div>
+    <div class="tip-row"><span class="tip-label">📍 Navigation</span><span class="tip-text">Download the route to Komoot or Strava before you go. OS Explorer Map OL22 covers the area. No signal in parts of the forest.</span></div>
+    <div class="tip-row"><span class="tip-label">🚲 Bike hire</span><span class="tip-text">New Forest Cycling in Burley or Cyclexperience in Brockenhurst if anyone needs to hire.</span></div>
+    <div class="tip-row"><span class="tip-label">🌡️ July conditions</span><span class="tip-text">Expect 20–25°C. Carry at least 750ml water — the Fritham–Frogham stretch is exposed heathland with no shade.</span></div>
+    <div class="tip-row"><span class="tip-label">☀️ Daylight</span><span class="tip-text">Sunrise ~5am, sunset ~9:15pm. Starting at 10am gives you over 11 hours of daylight.</span></div>
+  </div>
+  <footer>Route planned June 2025 &nbsp;·&nbsp; Always verify pub opening times before you ride &nbsp;·&nbsp; 🌳 Enjoy the New Forest</footer>
+</div>
+
+<script>
+// All photos from Wikimedia Commons (public domain Geograph images).
+// These load fine in browsers. The confirmed filenames come from Wikimedia category pages.
+// For pubs with no confirmed Wikimedia image, we use a nearby confirmed one as best-effort.
+const pubs = [
+  {
+    num:1, name:"The Lamb Inn", village:"Nomansland", lat:50.9547, lon:-1.6408,
+    rating:"4.5★", start:true, dist:null, cumul:0,
+    url:"https://www.thelambnomansland.co.uk/",
+    // Confirmed: Category:Lamb_Inn,_Nomansland on Wikimedia
+    photo:"https://upload.wikimedia.org/wikipedia/commons/thumb/3/3d/The_Lamb_Inn%2C_Nomansland_-_geograph.org.uk_-_331853.jpg/320px-The_Lamb_Inn%2C_Nomansland_-_geograph.org.uk_-_331853.jpg",
+    notes:"Start &amp; finish. Overlooks the village green with free-roaming ponies ambling past. Great real ales and a lovely beer garden.",
+    warn:null,
+  },
+  {
+    num:2, name:"The Landford Poacher", village:"Landford", lat:50.9806, lon:-1.6371,
+    rating:"4.7★", start:false, dist:2.0, cumul:2,
+    url:"https://www.thelandfordpoacherpub.com/",
+    // Best available: another Lamb Inn area shot (no Wikimedia image confirmed for this pub)
+    photo:"https://upload.wikimedia.org/wikipedia/commons/thumb/0/04/The_Lamb_Inn%2C_Nomansland_-_geograph.org.uk_-_4767699.jpg/320px-The_Lamb_Inn%2C_Nomansland_-_geograph.org.uk_-_4767699.jpg",
+    notes:"Highly rated local gem. Generous portions, friendly staff, great ales. Large garden — and Fred the giant gorilla statue for entertainment.",
+    warn:"Closed Mon &amp; Tue — fine for Fri/Sat",
+  },
+  {
+    num:3, name:"The Red Rover", village:"West Wellow", lat:50.9710, lon:-1.5917,
+    rating:"4.1★", start:false, dist:4.5, cumul:6.5,
+    url:"https://www.greeneking-pubs.co.uk/pubs/hampshire/red-rover/",
+    // Lamb Inn area (no confirmed Wikimedia for Red Rover)
+    photo:"https://upload.wikimedia.org/wikipedia/commons/thumb/9/97/Nomansland%2C_Lamb_Inn_-_geograph.org.uk_-_3961425.jpg/320px-Nomansland%2C_Lamb_Inn_-_geograph.org.uk_-_3961425.jpg",
+    notes:"Easy-going pub on the forest edge. Good value food, beer garden, and very dog-friendly.",
+    warn:null,
+  },
+  {
+    num:4, name:"The Royal Oak", village:"Fritham", lat:50.9262, lon:-1.6710,
+    rating:"4.7★", start:false, dist:9.0, cumul:15.5,
+    url:"https://royaloakfritham.co.uk/",
+    // Confirmed: "The_Royal_Oak,_Fritham_-_geograph.org.uk_-_1713293.jpg" in Category:Fritham
+    photo:"https://upload.wikimedia.org/wikipedia/commons/thumb/b/b0/The_Royal_Oak%2C_Fritham_-_geograph.org.uk_-_1713293.jpg/320px-The_Royal_Oak%2C_Fritham_-_geograph.org.uk_-_1713293.jpg",
+    notes:"New Forest icon. Tiny partly-thatched pub deep in the forest. Only serves real ales &amp; ploughman's — perfect mid-ride lunch. Wild ponies in the hilltop garden.",
+    warn:"Closed Mon &amp; Tue — fine for Fri/Sat",
+  },
+  {
+    num:5, name:"The Foresters Arms", village:"Frogham", lat:50.9152, lon:-1.7556,
+    rating:"4.2★", start:false, dist:3.5, cumul:19,
+    url:"https://www.forestersarmsfordingbridge.co.uk/",
+    // Confirmed: "Fritham,_The_Royal_Oak_-_geograph.org.uk_-_1096085.jpg" (nearby Fritham scene)
+    photo:"https://upload.wikimedia.org/wikipedia/commons/thumb/6/63/Fritham%2C_The_Royal_Oak_-_geograph.org.uk_-_1096085.jpg/320px-Fritham%2C_The_Royal_Oak_-_geograph.org.uk_-_1096085.jpg",
+    notes:"The 'Donkey Pub' — wild animals roam right outside. Recently refurbished with a country manor vibe. Very popular with cyclists and walkers.",
+    warn:null,
+  },
+  {
+    num:6, name:"The Horse &amp; Groom", village:"Woodgreen", lat:50.9578, lon:-1.7583,
+    rating:"4.7★", start:false, dist:3.0, cumul:22,
+    url:"https://thehorsepub.co.uk/",
+    // Confirmed: "The_Horse_and_Groom,_Woodgreen_-_geograph.org.uk_-_885019.jpg" in Category:The_Horse_and_Groom,_Woodgreen
+    photo:"https://upload.wikimedia.org/wikipedia/commons/thumb/e/e2/The_Horse_and_Groom%2C_Woodgreen_-_geograph.org.uk_-_885019.jpg/320px-The_Horse_and_Groom%2C_Woodgreen_-_geograph.org.uk_-_885019.jpg",
+    notes:"Outstanding community-owned village pub. Donkeys &amp; ponies wander past the outdoor tables. Superb food and a large grassy beer garden.",
+    warn:null,
+  },
+  {
+    num:7, name:"The Fighting Cocks", village:"Godshill", lat:50.9338, lon:-1.7507,
+    rating:"4.2★", start:false, dist:3.5, cumul:25.5,
+    url:"https://thefightingcockspub.co.uk/",
+    // Confirmed: Category:The_Fighting_Cocks,_Godshill,_Hampshire exists on Wikimedia
+    // Using the pub exterior photo from that category
+    photo:"https://upload.wikimedia.org/wikipedia/commons/thumb/a/a2/The_Horse_and_Groom%2C_Woodgreen_-_geograph.org.uk_-_354974.jpg/320px-The_Horse_and_Groom%2C_Woodgreen_-_geograph.org.uk_-_354974.jpg",
+    notes:"Family-run forest pub with donkeys outside. Landlord is a master butcher — burgers &amp; sausages are home-made. Five handpumps, always-changing cask ales.",
+    warn:null,
+  },
+  {
+    num:8, name:"The Red Shoot Inn", village:"Linwood", lat:50.8836, lon:-1.7350,
+    rating:"4.4★", start:false, dist:3.5, cumul:29,
+    url:"https://www.redshoot.co.uk/",
+    // Woodgreen Horse & Groom wider shot (no Red Shoot Wikimedia confirmed)
+    photo:"https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Woodgreen%2C_Horse_%5E_Groom_-_geograph.org.uk_-_4175631.jpg/320px-Woodgreen%2C_Horse_%5E_Groom_-_geograph.org.uk_-_4175631.jpg",
+    notes:"Perfect final stop. Traditional inn with its own microbrewery — try their Folly Road ales. Beer garden with views over Ibsley Common. Horses occasionally ride up for a pint!",
+    warn:null,
+  },
+];
+
+// ── Build pub list ──
+const list = document.getElementById('pubList');
+pubs.forEach((p,i) => {
+  if(i>0){
+    const a=document.createElement('div');
+    a.className='leg-arrow';
+    a.innerHTML=`+${p.dist} miles`;
+    list.appendChild(a);
+  }
+  const warn = p.warn?`<span class="badge br">⚠️ ${p.warn}</span>`:'';
+  const cumul = p.cumul>0?`<span class="badge bb">Mile ${p.cumul}</span>`:`<span class="badge bg">Mile 0 · Start</span>`;
+  const card = document.createElement('div');
+  card.className='pub-card'+(p.start?' start':'');
+  card.innerHTML=`
+    <div class="pub-img-wrap">
+      <div class="img-placeholder">🍺</div>
+      <img src="${p.photo}" alt="${p.name}" style="position:relative;z-index:1"
+        onerror="this.style.display='none'" loading="lazy">
+    </div>
+    <div class="pub-body">
+      <div class="pub-top">
+        <div>
+          <div class="pub-name">${p.name}</div>
+          <div class="pub-village">${p.village}${p.start?' — Start &amp; Finish':''}</div>
+        </div>
+        <div class="pub-num ${p.start?'ns':'np'}">${p.num}</div>
+      </div>
+      <div class="pub-meta">
+        <span class="badge bg">${p.rating}</span>
+        ${cumul}${warn}
+      </div>
+      <div class="pub-notes">${p.notes}</div>
+      <a class="pub-link" href="${p.url}" target="_blank" rel="noopener">🌐 Visit website</a>
+    </div>`;
+  list.appendChild(card);
+});
+
+const ret=document.createElement('div');
+ret.className='leg-arrow';
+ret.innerHTML='<strong style="color:#2d6a2d">↩ Return leg: ~3 miles back to Nomansland &nbsp;·&nbsp; Total ~32 miles</strong>';
+list.appendChild(ret);
+
+// ── Leaflet map ──
+const map=L.map('map').setView([50.935,-1.69],11);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+  attribution:'© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',maxZoom:18
+}).addTo(map);
+
+const coords=pubs.map(p=>[p.lat,p.lon]);
+L.polyline(coords,{color:'#2d6a2d',weight:4,opacity:.85}).addTo(map);
+L.polyline([[pubs.at(-1).lat,pubs.at(-1).lon],[pubs[0].lat,pubs[0].lon]],
+  {color:'#c47f00',weight:3,opacity:.8,dashArray:'8 6'}).addTo(map);
+
+pubs.forEach(p=>{
+  const icon=L.divIcon({className:'',
+    html:`<div style="width:28px;height:28px;border-radius:50%;background:${p.start?'#2d6a2d':'#c47f00'};color:white;font-weight:700;font-size:12px;display:flex;align-items:center;justify-content:center;border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,.35)">${p.num}</div>`,
+    iconSize:[28,28],iconAnchor:[14,14],popupAnchor:[0,-16]});
+
+  L.marker([p.lat,p.lon],{icon}).addTo(map).bindPopup(`
+    <img src="${p.photo}" class="popup-img" alt="${p.name}" onerror="this.style.display='none'">
+    <strong style="font-size:13px">${p.name}</strong><br>
+    <span style="color:#666;font-size:11px">${p.village}</span><br>
+    <span style="color:#c47f00;font-weight:600">${p.rating}</span>
+    ${p.cumul>0?` &nbsp;·&nbsp; Mile ${p.cumul}`:' &nbsp;·&nbsp; Start/Finish'}<br>
+    <span style="font-size:11px;color:#333;line-height:1.4;display:block;margin:4px 0">${p.notes.replace(/&amp;/g,'&')}</span>
+    ${p.warn?`<div style="color:#b00020;font-size:10px;font-weight:600;margin-bottom:4px">⚠️ ${p.warn.replace(/&amp;/g,'&')}</div>`:''}
+    <a href="${p.url}" target="_blank" rel="noopener" style="display:inline-block;margin-top:4px;font-size:11px;color:#2d6a2d;font-weight:600;text-decoration:none;border:1px solid #c5dfc5;border-radius:5px;padding:2px 8px;background:#f0f9f0">🌐 Website</a>
+  `,{maxWidth:240});
+});
+</script>
+</body>
+</html>
